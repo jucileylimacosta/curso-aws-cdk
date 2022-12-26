@@ -5,6 +5,7 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.ecs.*;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
@@ -20,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Service02Stack extends Stack {
-    public Service02Stack(final Construct scope, final String id, Cluster cluster, SnsTopic productEventsTopic) {
+    public Service02Stack(final Construct scope, final String id, Cluster cluster, SnsTopic productEventsTopic, Table productEventsDdb) {
 
-        this(scope, id, null, cluster, productEventsTopic);
+        this(scope, id, null, cluster, productEventsTopic, productEventsDdb);
     }
 
-    public Service02Stack(final Construct scope, final String id, final StackProps props, Cluster cluster, SnsTopic productEventsTopic) {
+    public Service02Stack(final Construct scope, final String id, final StackProps props, Cluster cluster, SnsTopic productEventsTopic, Table productEventsDdb) {
         super(scope, id, props);
 
         Queue productEventsDlq = Queue.Builder.create(this, "ProductEventsDlq")
@@ -60,7 +61,7 @@ public class Service02Stack extends Stack {
                 .taskImageOptions(
                         ApplicationLoadBalancedTaskImageOptions.builder()
                             .containerName("aws_project02")
-                            .image(ContainerImage.fromRegistry("dockeridjota/curso_aws_project02:1.1.0"))
+                            .image(ContainerImage.fromRegistry("dockeridjota/curso_aws_project02:1.2.0"))
                             .containerPort(9090)
                             .logDriver(LogDriver.awsLogs(AwsLogDriverProps.builder()
                                 .logGroup(LogGroup.Builder.create(this, "Service02LogGroup")
@@ -92,6 +93,7 @@ public class Service02Stack extends Stack {
                 .build());
 
         productEventsQueue.grantConsumeMessages(service02.getTaskDefinition().getTaskRole());
+        productEventsDdb.grantReadWriteData(service02.getTaskDefinition().getTaskRole());
 
     }
 }
